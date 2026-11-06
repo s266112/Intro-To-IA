@@ -1,129 +1,92 @@
-# Taxi Grid World — Search Algorithms Project
+# Taxi Grid World — Progetto Algoritmi di Ricerca
 
-Welcome to the **Taxi Grid World** assignment! In this project, you will implement search algorithms (such as Uninformed Search and $A^*$ Search) with various heuristics to find the **cheapest route** for a taxi driver. Your goal is to navigate from a starting position to pick up a passenger and deliver them to their target destination with minimal path cost.
-
----
-
-## Overview & Problem Definition
-
-The environment represents a grid city map containing obstacles (walls), varying terrain types, a passenger pickup location, and a final dropoff location.
-
-Your task is divided into two phases:
-
-1. **Pickup Phase:** Drive from the initial taxi location to the passenger station and perform the `PICKUP` action.
-2. **Delivery Phase:** Transport the passenger from the pickup location to their destination station and perform the `DROPOFF` action.
-
-The goal is achieved when the passenger is successfully delivered and the taxi stands at the final destination.
+Benvenuto nell'assegnazione **Taxi Grid World**! In questo progetto implementerai algoritmi di ricerca (come Uninformed Search e $A^*$ Search) con diverse euristiche per trovare il **percorso a costo minimo** per un tassista. Il tuo obiettivo è navigare da una posizione iniziale per prelevare un passeggero e consegnarlo alla destinazione target con costo di percorso minimo.
 
 ---
 
-## State Representation
+## Panoramica e definizione del problema
 
-To apply graph search algorithms like BFS, Uniform Cost Search (UCS), or $A^*$, you need to track state transitions. The state in `TaxiWorld` is represented as a 5-tuple:
+L'ambiente rappresenta una mappa cittadina a griglia contenente ostacoli (muri), tipi di terreno con costi diversi, un punto di prelievo del passeggero e un punto di consegna finale.
+
+Il tuo compito è diviso in due fasi:
+
+1. **Fase di prelievo:** Guida dalla posizione iniziale del taxi fino alla stazione del passeggero ed esegui l'azione `PICKUP`.
+2. **Fase di consegna:** Trasporta il passeggero dalla posizione di prelievo alla stazione di destinazione ed esegui l'azione `DROPOFF`.
+
+L'obiettivo è raggiunto quando il passeggero è consegnato con successo e il taxi si trova alla destinazione finale.
+
+---
+
+## Rappresentazione dello stato
+
+Per applicare algoritmi di ricerca su grafo come BFS, Uniform Cost Search (UCS) o $A^*$, devi tenere traccia delle transizioni di stato. Lo stato in `TaxiWorld` è rappresentato come una 5-tupla:
 
 $$\text{State} = (x, y, \text{status}, \text{passenger\_loc}, \text{destination\_loc})$$
 
-- **$x, y$**: Current grid coordinates of the taxi (0-indexed).
-- **$\text{status}$**: Current status of the passenger:
-  - `0`: `PASSENGER_WAITING` (waiting at pickup)
-  - `1`: `PASSENGER_IN_TAXI` (in transit)
-  - `2`: `PASSENGER_DELIVERED` (at destination)
-- **$\text{passenger\_loc}$**: Index of the passenger's pickup station (`0` = Red Station).
-- **$\text{destination\_loc}$**: Index of the destination station (`1` = Green Station).
+- **$x, y$**: coordinate attuali del taxi sulla griglia (indicizzate da 0).
+- **$\text{status}$**: stato attuale del passeggero:
+  - `0`: `PASSENGER_WAITING` (in attesa al punto di prelievo)
+  - `1`: `PASSENGER_IN_TAXI` (in transito)
+  - `2`: `PASSENGER_DELIVERED` (alla destinazione)
+- **$\text{passenger\_loc}$**: indice della stazione di prelievo del passeggero (`0` = Red Station).
+- **$\text{destination\_loc}$**: indice della stazione di destinazione (`1` = Green Station).
 
 ---
 
-## Actions & Movement Costs
+## Azioni e costi di movimento
 
-The action space consists of 6 discrete actions:
+Lo spazio delle azioni è composto da 6 azioni discrete:
 
-| Action ID | Action Name | Description | Base Cost |
+| ID azione | Nome azione | Descrizione | Costo base |
 | :---: | :---: | :--- | :---: |
-| `0` | `UP` | Move up 1 cell | Terrain-dependent |
-| `1` | `DOWN` | Move down 1 cell | Terrain-dependent |
-| `2` | `LEFT` | Move left 1 cell | Terrain-dependent |
-| `3` | `RIGHT` | Move right 1 cell | Terrain-dependent |
-| `4` | `PICKUP` | Pick up passenger at station | `1` |
-| `5` | `DROPOFF` | Drop off passenger at destination | `1` |
+| `0` | `UP` | Muovi in su di 1 cella | Dipendente dal terreno |
+| `1` | `DOWN` | Muovi in giù di 1 cella | Dipendente dal terreno |
+| `2` | `LEFT` | Muovi a sinistra di 1 cella | Dipendente dal terreno |
+| `3` | `RIGHT` | Muovi a destra di 1 cella | Dipendente dal terreno |
+| `4` | `PICKUP` | Preleva il passeggero alla stazione | `1` |
+| `5` | `DROPOFF` | Consegna il passeggero alla destinazione | `1` |
 
-### Terrain Costs
+### Costi del terreno
 
-Different grid cells incur different traverse costs:
+Celle diverse della griglia comportano costi di attraversamento diversi:
 
-| Symbol | Terrain Type | Color in Render | Cost ($g(n)$ impact) |
+| Simbolo | Tipo di terreno | Colore nel render | Costo (impatto su $g(n)$) |
 | :---: | :--- | :--- | :---: |
-| `.` | Road | Light Gray | `1` |
-| `r` | Residential Area | Light Green | `3` |
-| `t` | Traffic Zone | Light Orange | `5` |
-| `$` | Toll Gate | Light Purple | `10` |
-| `#` | Wall | Dark Gray | Impassable |
+| `.` | Strada | Grigio chiaro | `1` |
+| `r` | Area residenziale | Verde chiaro | `3` |
+| `t` | Zona di traffico | Arancione chiaro | `5` |
+| `$` | Casello | Viola chiaro | `10` |
+| `#` | Muro | Grigio scuro | Impassabile |
 
-> **Note:** The step reward returned by `env.step(action)` is the negative action cost ($R = -c$). An illegal move incurs a penalty cost of $5$ and leaves the state unchanged.
-
----
-
-## Key Environment Methods for Search
-
-You can interface with the environment directly through built-in helper methods designed specifically for search algorithms without mutating the live state:
-
-### State and Action Methods
-
-- `env.get_state()`: Returns the current state tuple.
-- `env.is_goal(state=None)`: Checks if the given state (or current state) satisfies the goal condition.
-- `env.get_possible_actions(state=None)`: Returns a list of legal actions available from the specified state.
-- `env.get_action_cost(state, action)`: Returns the transition cost of executing `action` from `state`. Returns `inf` for illegal actions.
-- `env.get_successor(state, action)`: Returns the resulting **next state** tuple after taking `action` from `state` (does **not** alter the actual environment).
-
-### Station Locations
-
-You can access station coordinates via `env.stations`:
-
-- **Red Station (Pickup):** `env.stations[0]["pos"]` $\rightarrow (4, 4)$
-- **Green Station (Dropoff):** `env.stations[1]["pos"]` $\rightarrow (0, 14)$
+> **Nota:** il reward di passo restituito da `env.step(action)` è il costo dell'azione con segno negativo ($R = -c$). Una mossa illegale comporta una penalità di costo $5$ e lascia lo stato invariato.
 
 ---
 
-## Example
+## Metodi principali dell'ambiente per la ricerca
 
-Here is a simple example showing how to "play" the game using `WASD` and `EQ` as keys for movements and for pipckup and dropoff (look directly at the code in `taxi\runner.py` for more references).
+Puoi interfacciarti con l'ambiente direttamente tramite metodi di supporto pensati appositamente per gli algoritmi di ricerca, senza modificare lo stato live:
+
+### Metodi per stato e azioni
+
+- `env.get_state()`: restituisce la tupla dello stato corrente.
+- `env.is_goal(state=None)`: verifica se lo stato dato (o quello corrente) soddisfa la condizione di goal.
+- `env.get_possible_actions(state=None)`: restituisce una lista di azioni legali disponibili dallo stato specificato.
+- `env.get_action_cost(state, action)`: restituisce il costo di transizione dell'esecuzione di `action` da `state`. Restituisce `inf` per azioni illegali.
+- `env.get_successor(state, action)`: restituisce la tupla del **prossimo stato** risultante dopo aver eseguito `action` da `state` ( **non** altera l'ambiente reale).
+
+### Posizioni delle stazioni
+
+Puoi accedere alle coordinate delle stazioni tramite `env.stations`:
+
+- **Red Station (Prelievo):** `env.stations[0]["pos"]` $\rightarrow (4, 4)$
+- **Green Station (Consegna):** `env.stations[1]["pos"]` $\rightarrow (0, 14)$
+
+---
+
+## Esempio
+
+Ecco un semplice esempio che mostra come "giocare" al gioco usando `WASD` e `EQ` come tasti per i movimenti e per pickup e dropoff (guarda direttamente il codice in `taxi\runner.py` per ulteriori riferimenti).
 
 ```bash
 cd projects
 py -m taxi.runner
-```
-
-Use this example just to explore the environment and think about how to solve the problem within the search framework.
-
----
-
-## Your work
-
-You must implement a file named `submsission.py` where you implement an agent (following the structure present in `agent.py`). In order to make it easier for you, you can literally copy and paste the code in `agent.py` to begin with. Later modified where needed!
-
-**It is important that you add** your `name` `surname` and `student id` in the header of the file (first line in the format NAME SURNAME STUDENT-ID). Later you will upload the file to Teams.
-
-Really important thing: you can change whatever you like, **but**:
-
-- you **must not change** the definitions of the methods
-- you **must use a search algorithm** as the one seen in lectures to solve the task
-- you **cannot use the optimal path as heuristic**
-- you must **describe your decision with comments** here and there
-- you must **not use only LLM / agents** to solve the task. If you do it, we will know and assign 0 points to your work.
-
-The solution will be evaluated based on:
-
-- does your algorithm find a solution?
-- does your algorithm find the optimal solution? (in terms of cumulative cost)
-- how much time does your algorithm take to find the solution?
-
-In order to obtain the maximum point finding the optimal solution is sufficient.
-The ones that do the best in terms of performances will get additional points.
-
-You can test your submission running
-
-```bash
-cd projects
-py -m taxi.test
-```
-
-You will obtain a summary with the target metrics for the assignment.
