@@ -34,7 +34,7 @@ def run(env: gym.Env, agent : Agent):
 
     while not done and not truncated:
 
-        if env.render_mode == RenderMode.HUMAN:
+        if env.render_mode == "human":
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     env.close()

@@ -1,60 +1,60 @@
 """
-    COPY THIS CODE INSIDE `submission.py` (IN THE SAME FOLDER AS THIS ONE).
-    Remove this comment and add instead a line with written only:
+    COPIA QUESTO CODICE DENTRO `submission.py` (NELLA STESSA CARTELLA DI QUESTO FILE).
+    Rimuovi questo commento e aggiungi invece una riga con scritto solo:
         -`name`, `surname`, `student id`
-    COMPLETE THE REQUIRED PARTS. YOU CAN CHANGE WHATEVER YOU LIKE, BUT:
+    COMPLETA LE PARTI RICHIESTE. PUOI CAMBIARE QUELLO CHE VUOI, MA:
 
-    - you must mantain the definition of the methods as they are
-    - you must use a search algorithm as the one seen in lectures to solve the task
-    - you cannot use the optimal path as heuristic
-    - you must describe your decision with comments here and there
-    - you must not use only LLM / agents to solve the task. if you do it, we will know.
+    - devi mantenere la definizione dei metodi così come sono
+    - devi usare un algoritmo di ricerca come quelli visti a lezione per risolvere il task
+    - non puoi usare il percorso ottimo come euristica
+    - devi descrivere le tue decisioni con commenti qua e là
+    - non devi usare solo LLM / agenti per risolvere il task. Se lo fai, lo sapremo.
 
-    The solution will be evaluated based on:
+    La soluzione sarà valutata in base a:
 
-    - does your algorithm find a solution?
-    - does your algorithm find the optimal solution (in terms of cumulative cost)
-    - how much time does your algorithm take to find the solution?
+    - il tuo algoritmo trova una soluzione?
+    - il tuo algoritmo trova la soluzione ottima (in termini di costo cumulativo)
+    - quanto tempo impiega il tuo algoritmo a trovare la soluzione?
 
-    In order to obtain the maximum point finding the optimal solution is sufficient.
-    The ones that do the best in terms of performances will get additional points.
+    Per ottenere il punteggio massimo è sufficiente trovare la soluzione ottima.
+    Coloro che performano meglio in termini di prestazioni otterranno punti aggiuntivi.
 """
 class Agent():
 
-  def __init__(self, env): # DO NOT CHANGE THE DEFINITION
-    self.env = env # this is an instance of TaxiWorld
+  def __init__(self, env): # NON CAMBIARE LA DEFINIZIONE
+    self.env = env # questa è un'istanza di TaxiWorld
     self.plan = []
     self.search()
 
-  def act(self): # DO NOT CHANGE THE DEFINITION
-    """Core function called from the runner in order to take an action."""
-    # It is assumed that self.search has been already called
+  def act(self): # NON CAMBIARE LA DEFINIZIONE
+    """Funzione principale chiamata dal runner per eseguire un'azione."""
+    # Si assume che self.search sia già stata chiamata
     if self.plan:
       return self.plan.pop(0)
     return 0 # Fallback
 
-  def search(self): # DO NOT CHANGE THE DEFINITION
+  def search(self): # NON CAMBIARE LA DEFINIZIONE
     """
-    THIS IS THE METHOD YOU MUST IMPLEMENT.
+    QUESTO È IL METODO CHE DEVI IMPLEMENTARE.
 
-    Core search routine to build the search tree and find a path to the goal.
+    Routine di ricerca principale: costruisce l'albero di ricerca e trova un percorso verso il goal.
 
-    This method should populate self.plan.
+    Questo metodo deve popolare self.plan.
 
-    While using this method one should use the utilities of the environment for the search.
+    Usando questo metodo dovresti sfruttare le utility dell'ambiente per la ricerca.
 
-    We remember you:
+    Ti ricordiamo:
         - is_goal(state)
         - get_possible_actions(state)
         - get_action_cost(state, action)
         - get_successor(state, action)
-    You can read the implementation details directly in the environment.py of this folder.
+    Puoi leggere i dettagli implementativi direttamente nell'environment.py di questa cartella.
 
-    Notice, the utilities already assume the form of the state to be:
+    Nota: le utility assumono già che la forma dello stato sia:
 
         (taxi_x, taxi_y, passenger_status, passenger_station, destination_station)
     
-    The passenger_status can be:
+    passenger_status può essere:
 
         PASSENGER_WAITING
         PASSENGER_IN_TAXI

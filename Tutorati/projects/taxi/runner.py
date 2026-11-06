@@ -2,17 +2,17 @@ import pygame
 import gymnasium as gym
 
 def human_testing(env: gym.Env):
-    """Allows a human player to control the environment frame-by-frame."""
+    """Permette a un giocatore umano di controllare l'ambiente frame per frame."""
     assert env.render_mode == "human"
 
     done = False
     truncated = False
 
     KEY_MAP = {
-        pygame.K_w: 0,  # UP
-        pygame.K_s: 1,  # DOWN
-        pygame.K_a: 2,  # LEFT
-        pygame.K_d: 3,  # RIGHT
+        pygame.K_w: 0,  # SU
+        pygame.K_s: 1,  # GIÙ
+        pygame.K_a: 2,  # SINISTRA
+        pygame.K_d: 3,  # DESTRA
         pygame.K_e: 4,  # PICKUP
         pygame.K_q: 5,  # DROPOFF
     }
@@ -21,7 +21,7 @@ def human_testing(env: gym.Env):
 
     while not done and not truncated:
 
-        action = 4 # default pickup
+        action = 4 # pickup di default
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

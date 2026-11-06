@@ -9,8 +9,8 @@ PASSENGER_WAITING = 0
 PASSENGER_IN_TAXI = 1
 PASSENGER_DELIVERED = 2
 
-# '#' wall   '.' road   'r' residential   't' traffic   '$' toll
-# 'P' passenger spawn (road)   'G' goal (road)
+# '#' muro   '.' strada   'r' residenziale   't' traffico   '$' casello
+# 'P' spawn passeggero (strada)   'G' goal (strada)
 LAYOUT = [
     #0123456789ABCDE   (x)
     ".#...#.........",  # 0   
@@ -31,17 +31,17 @@ LAYOUT = [
 ]
 
 ACTIONS = {
-    0: (0, -1),  # UP
-    1: (0, 1),   # DOWN
-    2: (-1, 0),  # LEFT
-    3: (1, 0),   # RIGHT
+    0: (0, -1),  # SU
+    1: (0, 1),   # GIÙ
+    2: (-1, 0),  # SINISTRA
+    3: (1, 0),   # DESTRA
 }
 
 ACTION_NAMES = {
-    0: "UP",
-    1: "DOWN",
-    2: "LEFT",
-    3: "RIGHT",
+    0: "SU",
+    1: "GIÙ",
+    2: "SINISTRA",
+    3: "DESTRA",
     4: "PICKUP",
     5: "DROPOFF",
 }
@@ -81,9 +81,9 @@ class ObservationType(Enum):
 
 class TaxiWorld(gym.Env):
     """
-    Fixed-layout Taxi Grid World for BFS, UCS, and A*.
+    Taxi Grid World a layout fisso per BFS, UCS e A*.
 
-    State:
+    Stato:
         (taxi_x, taxi_y, passenger_status, passenger_station,
          destination_station)
 
@@ -92,11 +92,11 @@ class TaxiWorld(gym.Env):
         PASSENGER_IN_TAXI
         PASSENGER_DELIVERED
 
-    Actions:
-        0 = UP
-        1 = DOWN
-        2 = LEFT
-        3 = RIGHT
+    Azioni:
+        0 = SU
+        1 = GIÙ
+        2 = SINISTRA
+        3 = DESTRA
         4 = PICKUP
         5 = DROPOFF
     """
@@ -139,10 +139,10 @@ class TaxiWorld(gym.Env):
         self.terrain = {}
         self._generate_map()
 
-        # Grid encoding:
-        # 0=road, 1=wall, 2=station, 3=taxi,
-        # 4=taxi with passenger, 5=residential,
-        # 6=traffic, 7=toll.
+        # Codifica della griglia:
+        # 0=strada, 1=muro, 2=stazione, 3=taxi,
+        # 4=taxi con passeggero, 5=residenziale,
+        # 6=traffico, 7=casello.
         self.observation_space = spaces.Box(
             low=0,
             high=7,
@@ -170,7 +170,7 @@ class TaxiWorld(gym.Env):
         self.reset()
 
     def _generate_map(self):
-        """Create the map ."""
+        """Crea la mappa."""
         symbol_to_terrain = {
             ".": "road", "P": "road", "G": "road",
             "r": "residential", "t": "traffic", "$": "toll",
@@ -185,15 +185,15 @@ class TaxiWorld(gym.Env):
                 else:
                     self.terrain[(x, y)] = symbol_to_terrain[ch]
 
-        # In case a station ended up on a wall
+        # Nel caso una stazione finisca su un muro
         for station in self.stations.values():
             pos = station["pos"]
             self.terrain[pos] = "road"
             self.walls.discard(pos)
 
-    # Search utilities 
+    # Utility per la ricerca
     def get_state(self):
-        """Return the complete, hashable state used by graph search."""
+        """Restituisce lo stato completo e hashable usato dalla ricerca su grafo."""
         return (
             self.taxi[0],
             self.taxi[1],
@@ -203,7 +203,7 @@ class TaxiWorld(gym.Env):
         )
 
     def is_goal(self, state=None):
-        """Goal: passenger delivered and taxi at the destination."""
+        """Goal: passeggero consegnato e taxi alla destinazione."""
         if state is None:
             state = self.get_state()
 
@@ -216,14 +216,14 @@ class TaxiWorld(gym.Env):
         )
 
     def get_possible_actions(self, state=None):
-        """Return legal actions from a supplied or current state."""
+        """Restituisce le azioni legali da uno stato fornito o da quello corrente."""
         if state is None:
             state = self.get_state()
 
         tx, ty, status, passenger_loc, destination_loc = state
         legal = []
 
-        # Movement actions.
+        # Azioni di movimento.
         for action, (dx, dy) in ACTIONS.items():
             nx, ny = tx + dx, ty + dy
 
@@ -234,13 +234,13 @@ class TaxiWorld(gym.Env):
             ):
                 legal.append(action)
 
-        # Pickup: taxi must be at the waiting passenger's station.
+        # Pickup: il taxi deve trovarsi alla stazione del passeggero in attesa.
         if status == PASSENGER_WAITING:
             passenger_pos = self.stations[passenger_loc]["pos"]
             if (tx, ty) == passenger_pos:
                 legal.append(4)
 
-        # Dropoff: taxi must be at the destination with passenger onboard.
+        # Dropoff: il taxi deve trovarsi alla destinazione con il passeggero a bordo.
         if status == PASSENGER_IN_TAXI:
             destination_pos = self.stations[destination_loc]["pos"]
             if (tx, ty) == destination_pos:
@@ -250,11 +250,11 @@ class TaxiWorld(gym.Env):
 
     def get_action_cost(self, state, action):
         """
-        Return the positive cost of a legal action.
+        Restituisce il costo positivo di un'azione legale.
 
-        Movement cost is the cost of the destination tile.
-        Pickup and dropoff cost 1 each.
-        Illegal actions have infinite search cost.
+        Il costo di movimento è il costo della cella di destinazione.
+        Pickup e dropoff costano 1 ciascuno.
+        Le azioni illegali hanno costo di ricerca infinito.
         """
         if action not in self.get_possible_actions(state):
             return float("inf")
@@ -274,12 +274,12 @@ class TaxiWorld(gym.Env):
 
     def get_successor(self, state, action):
         """
-        Return the next state without mutating the live environment.
+        Restituisce lo stato successivo senza modificare l'ambiente live.
 
-        Intended for BFS/UCS/A*. Raises ValueError for illegal actions.
+        Pensato per BFS/UCS/A*. Solleva ValueError per azioni illegali.
         """
         if action not in self.get_possible_actions(state):
-            raise ValueError(f"Illegal action {action} for state {state}")
+            raise ValueError(f"Azione illegale {action} per lo stato {state}")
 
         tx, ty, status, passenger_loc, destination_loc = state
 
@@ -311,9 +311,9 @@ class TaxiWorld(gym.Env):
                 destination_loc,
             )
 
-        raise ValueError(f"Unknown action {action}")
+        raise ValueError(f"Azione sconosciuta {action}")
 
-    # Gymnasium Interface
+    # Interfaccia Gymnasium
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -332,7 +332,7 @@ class TaxiWorld(gym.Env):
 
     def step(self, action):
         if not self.action_space.contains(action):
-            raise ValueError(f"Invalid action: {action}")
+            raise ValueError(f"Azione non valida: {action}")
 
         state = self.get_state()
         legal_actions = self.get_possible_actions(state)
@@ -357,7 +357,7 @@ class TaxiWorld(gym.Env):
             reward = -float(cost)
             self.total_cost += cost
         else:
-            # Invalid action: fixed penalty; state does not change.
+            # Azione non valida: penalità fissa; lo stato non cambia.
             penalty = 5
             reward = -float(penalty)
             self.total_cost += penalty
@@ -422,7 +422,7 @@ class TaxiWorld(gym.Env):
             "goal": self.is_goal(),
         }
 
-    # Pygame Backbone for Visualization
+    # Scheletro Pygame per la visualizzazione
     def _setup_window(self):
         if not pygame.get_init():
             pygame.init()
@@ -449,24 +449,24 @@ class TaxiWorld(gym.Env):
 
     def _passenger_status_text(self):
         if self.passenger_status == PASSENGER_WAITING:
-            return "Waiting"
+            return "In attesa"
         if self.passenger_status == PASSENGER_IN_TAXI:
-            return "In taxi"
-        return "Delivered"
+            return "A bordo"
+        return "Consegnato"
 
     def _render_frame(self):
         """
-        Minimal renderer:
-        - Plain colored grid cells
-        - Taxi and station markers are simple squares
-        - No text or status bar inside the grid
+        Renderer minimale:
+        - Celle della griglia colorate in modo semplice
+        - Marker del taxi e delle stazioni come quadrati semplici
+        - Nessun testo o barra di stato dentro la griglia
         """
         surface = self.window if self.render_mode == "human" else self.canvas
         surface.fill((245, 245, 245))
 
         cs = self.cell_size
 
-        # Draw roads and walls.
+        # Disegno strade e muri.
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 rect = (x * cs, y * cs, cs, cs)
@@ -480,7 +480,7 @@ class TaxiWorld(gym.Env):
                 pygame.draw.rect(surface, color, rect)
                 pygame.draw.rect(surface, (190, 190, 190), rect, width=1)
 
-        # Draw stations as simple colored squares.
+        # Disegno le stazioni come quadrati colorati semplici.
         for idx, station in self.stations.items():
             sx, sy = station["pos"]
             inset = max(5, cs // 6)
@@ -494,7 +494,7 @@ class TaxiWorld(gym.Env):
             color = RED if idx == 0 else GREEN
             pygame.draw.rect(surface, color, rect)
 
-        # Draw taxi as a yellow square.
+        # Disegno il taxi come quadrato giallo.
         tx, ty = self.taxi
         inset = max(8, cs // 4)
         taxi_rect = (
@@ -505,7 +505,7 @@ class TaxiWorld(gym.Env):
         )
         pygame.draw.rect(surface, TAXI_COLOR, taxi_rect)
 
-        # When carrying the passenger, add a tiny dark marker.
+        # Quando trasporto il passeggero, aggiungo un piccolo marker scuro.
         if self.passenger_status == PASSENGER_IN_TAXI:
             marker_size = max(4, cs // 8)
             marker_rect = (
@@ -551,7 +551,7 @@ if __name__ == "__main__":
         running = env.render()
 
         if terminated or truncated:
-            print("Episode finished:", info)
+            print("Episodio terminato:", info)
             running = False
 
     env.close()
