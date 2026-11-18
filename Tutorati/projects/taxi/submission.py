@@ -98,35 +98,3 @@ class Agent():
             cur = prev
         actions.reverse()
         self.plan = actions
-
-
-
-
-# --- EXPLANATION OF MY CHOICES ---
-
-# 1. WHY DID I CHOOSE A* AND NOT BFS?
-#     I chose A* and not BFS because the terrains have different costs: BFS minimizes the number of actions,
-#     while A* takes into account the cost of every step and finds the path with the minimum total cost.
-#     Moreover, A* uses a heuristic to guide the search, and in general it explores fewer states
-#     than uniform-cost search (UCS).
-
-
-# 2. WHAT DOES THE HEURISTIC DO?
-#     The heuristic estimates the cost to reach the goal from a given state: I compute the Manhattan distance
-#     (ignoring walls and terrain costs) between taxi, passenger and destination, plus 1 for the pickup and 1 for the dropoff still to be done.
-#     I used Manhattan because the taxi moves only in 4 directions, so it is the minimum number of moves
-#     needed, and it is fast to compute.
-#     It must be admissible, i.e. it must never overestimate the real cost, to guarantee that A* finds the optimal solution.
-
-
-# 3. WHY DOES THE ESTIMATE NEVER OVERESTIMATE THE REAL COST?
-#     Because the Manhattan distance is the minimum number of moves to go from one cell to another, and every move costs at least 1
-#     (road is the cheapest terrain). So the real cost is always greater than or equal to the estimate.
-#     I count pickup and dropoff as exactly 1 each, which is what they really cost.
-
-
-# 4. WHY DO I CHECK THE GOAL WHEN POPPING FROM THE QUEUE AND NOT WHEN GENERATING IT?
-#     Because, with an admissible and consistent heuristic, A* guarantees that the first goal state popped from the queue is the one with the minimum cost.
-#     If I checked the goal at generation time, I could find a goal state with a higher cost than one I would find later.
-#     This way, instead, when I pop a goal state from the queue, I am sure its cost is the minimum possible,
-#     so I can stop and rebuild the optimal plan.
