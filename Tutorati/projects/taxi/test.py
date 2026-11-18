@@ -34,7 +34,7 @@ def run(env: gym.Env, agent : Agent):
 
     while not done and not truncated:
 
-        if env.render_mode == "human":
+        if env.render_mode == RenderMode.HUMAN:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     env.close()
@@ -51,7 +51,7 @@ def run(env: gym.Env, agent : Agent):
     summary["steps"] = steps
     summary["cost"] = cumulative_cost
     summary["solution"] = not truncated
-    summary["optimal_solution"] = (cumulative_cost == 71)
+    summary["optimal_solution"] = (cumulative_cost == 97)
 
     env.close()
     return summary
